@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace LiteMedoo;
 
-/**
- * Modern Medoo - Lightweight and modern MySQL database framework
- * 
- * Optimized for PHP 8.3+ and modern IDEs like PhpStorm
- * Includes MySQL specific functionality with JOIN support
- */
 class Medoo
 {
     /**
