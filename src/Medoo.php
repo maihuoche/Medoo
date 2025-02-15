@@ -10,7 +10,7 @@ namespace LiteMedoo;
  * Optimized for PHP 8.3+ and modern IDEs like PhpStorm
  * Includes MySQL specific functionality with JOIN support
  */
-class LiteMedoo
+class Medoo
 {
     /**
      * Database connection options
