@@ -2,7 +2,7 @@
     "name": "maihuoche/medoo",
     "autoload": {
         "psr-4": {
-            "LiteMedoo\\": "src/"
+            "maihuoche\\": "src/"
         }
     },
     "authors": [
