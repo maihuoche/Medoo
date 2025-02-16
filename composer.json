@@ -1,5 +1,5 @@
 {
-    "name": "maihuoche/lite-medoo",
+    "name": "maihuoche/medoo",
     "autoload": {
         "psr-4": {
             "LiteMedoo\\": "src/"

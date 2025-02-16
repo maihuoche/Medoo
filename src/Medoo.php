@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace LiteMedoo;
+namespace Medoo;
 
 class Medoo
 {
@@ -43,26 +43,25 @@ class Medoo
 
     /**
      * Initialize the Medoo object
+     * 
+     * @throws \InvalidArgumentException
      */
     public function __construct(array $options)
     {
-        // Validate minimum required fields
-        if (
-            empty($options['database']) ||
-            (
-                empty($options['host']) &&
-                empty($options['socket'])
-            )
-        ) {
-            throw new \InvalidArgumentException("Database credentials are required for connection");
+        if (empty($options['database'])) {
+            throw new \InvalidArgumentException("Database name is required");
+        }
+        
+        if (empty($options['host']) && empty($options['socket'])) {
+            throw new \InvalidArgumentException("Either host or socket must be specified");
         }
 
+        if (!isset($options['username'])) {
+            throw new \InvalidArgumentException("Username is required");
+        }
+        
         $this->options = $options;
-
-        if (isset($options['prefix'])) {
-            $this->prefix = $options['prefix'];
-        }
-
+        $this->prefix = $options['prefix'] ?? '';
         $this->connect();
     }
 
@@ -127,25 +126,40 @@ class Medoo
 
     /**
      * Begin a transaction
+     * 
+     * @throws \RuntimeException
      */
     public function beginTransaction(): bool
     {
+        if ($this->pdo->inTransaction()) {
+            throw new \RuntimeException("Transaction already started");
+        }
         return $this->pdo->beginTransaction();
     }
 
     /**
      * Commit a transaction
+     * 
+     * @throws \RuntimeException
      */
     public function commit(): bool
     {
+        if (!$this->pdo->inTransaction()) {
+            throw new \RuntimeException("No active transaction to commit");
+        }
         return $this->pdo->commit();
     }
 
     /**
      * Rollback a transaction
+     * 
+     * @throws \RuntimeException
      */
     public function rollBack(): bool
     {
+        if (!$this->pdo->inTransaction()) {
+            throw new \RuntimeException("No active transaction to rollback");
+        }
         return $this->pdo->rollBack();
     }
 
@@ -181,10 +195,15 @@ class Medoo
      * @param array $columns
      * @param array|null $where
      * @param array|null $join
-     * @return array|null
+     * @return array
+     * @throws \InvalidArgumentException
      */
-    public function select(string|array $table, array $columns = ['*'], ?array $where = null, ?array $join = null): ?array
+    public function select(string|array $table, array $columns = ['*'], ?array $where = null, ?array $join = null): array
     {
+        if (empty($columns)) {
+            throw new \InvalidArgumentException("Columns array cannot be empty");
+        }
+
         $map = [];
         $table_query = $this->buildTable($table);
         
@@ -218,10 +237,16 @@ class Medoo
      * 
      * @param string $table
      * @param array $data
-     * @return string|bool Last insert ID on success, false on failure
+     * @return string
+     * @throws \InvalidArgumentException
+     * @throws \RuntimeException
      */
-    public function insert(string $table, array $data): string|bool
+    public function insert(string $table, array $data): string
     {
+        if (empty($data)) {
+            throw new \InvalidArgumentException("Data array cannot be empty");
+        }
+
         $keys = array_keys($data);
         $columns = implode(', ', array_map(fn($key) => "`{$key}`", $keys));
         $placeholders = implode(', ', array_fill(0, count($keys), '?'));
@@ -232,9 +257,11 @@ class Medoo
         $this->debugQuery = $query;
         $this->debugParams = array_values($data);
         
-        $result = $this->statement->execute(array_values($data));
+        if (!$this->statement->execute(array_values($data))) {
+            throw new \RuntimeException("Failed to insert data");
+        }
         
-        return $result ? $this->pdo->lastInsertId() : false;
+        return $this->pdo->lastInsertId();
     }
 
     /**
@@ -243,10 +270,15 @@ class Medoo
      * @param string $table
      * @param array $data
      * @param array|null $where
-     * @return int Number of affected rows
+     * @return int
+     * @throws \InvalidArgumentException
      */
     public function update(string $table, array $data, ?array $where = null): int
     {
+        if (empty($data)) {
+            throw new \InvalidArgumentException("Data array cannot be empty");
+        }
+
         $map = [];
         $table_query = $this->buildTable($table);
         
@@ -391,9 +423,15 @@ class Medoo
 
     /**
      * Build the columns part of the SQL query
+     * 
+     * @throws \InvalidArgumentException
      */
     protected function buildColumns(array $columns, bool $isJoin = false): string
     {
+        if (empty($columns)) {
+            throw new \InvalidArgumentException("Columns array cannot be empty");
+        }
+
         if (in_array('*', $columns) && !$isJoin) {
             return '*';
         }
